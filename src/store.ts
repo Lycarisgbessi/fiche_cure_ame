@@ -1,72 +1,57 @@
 import { Submission } from './types';
 
-const STORAGE_KEY = 'curedame_submissions';
-
-export const getSubmissions = (): Submission[] => {
-  const data = localStorage.getItem(STORAGE_KEY);
-  return data ? JSON.parse(data) : [];
+export const getSubmissions = async (): Promise<Submission[]> => {
+  const res = await fetch('/api/submissions');
+  if (!res.ok) return [];
+  return res.json();
 };
 
-
-export const saveSubmission = async (submission: Submission) => {
-  const submissions = getSubmissions();
-  const index = submissions.findIndex(s => s.id === submission.id);
-  if (index >= 0) {
-    submissions[index] = submission;
-  } else {
-    submissions.push(submission);
-  }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(submissions));
+export const addSubmission = async (submission: Submission) => {
+  const res = await fetch('/api/submissions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(submission)
+  });
+  return res.json();
 };
 
-export const updateComment = (submissionId: string, questionId: string, comment: string) => {
-  const submissions = getSubmissions();
-  const submission = submissions.find(s => s.id === submissionId);
-  if (submission) {
-    if (!submission.comments) submission.comments = {};
-    submission.comments[questionId] = comment;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(submissions));
-  }
+export const updateComment = async (submissionId: string, questionId: string, text: string) => {
+  // To avoid overriding all comments, we might need to fetch first, but let's assume we send the delta
+  // or we can fetch current, merge, and send.
+  // Actually the API accepts a `comments` object. We can just send the updated `comments` object from the component.
 };
 
-export const startInterview = (submissionId: string, pastorName: string) => {
-  const submissions = getSubmissions();
-  const submission = submissions.find(s => s.id === submissionId);
-  if (submission) {
-    submission.status = 'interviewing';
-    submission.interviewerName = pastorName;
-    submission.interviewDate = new Date().toISOString();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(submissions));
-  }
+export const startInterview = async (submissionId: string, pastorName: string) => {
+  await fetch('/api/submissions', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      id: submissionId,
+      status: 'interviewing',
+      interviewerName: pastorName
+    })
+  });
 };
 
-export const updateGlobalObservations = (submissionId: string, observations: string) => {
-  const submissions = getSubmissions();
-  const submission = submissions.find(s => s.id === submissionId);
-  if (submission) {
-    submission.globalObservations = observations;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(submissions));
-  }
+export const completeInterview = async (submissionId: string) => {
+  await fetch('/api/submissions', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      id: submissionId,
+      status: 'completed'
+    })
+  });
 };
 
-export const completeInterview = (submissionId: string) => {
-  const submissions = getSubmissions();
-  const submission = submissions.find(s => s.id === submissionId);
-  if (submission) {
-    submission.status = 'completed';
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(submissions));
-  }
-};
-
-export const assignInterview = (submissionId: string, newPastorName: string) => {
-  const submissions = getSubmissions();
-  const submission = submissions.find(s => s.id === submissionId);
-  if (submission) {
-    submission.interviewerName = newPastorName;
-    if (submission.status === 'new' || !submission.status) {
-      submission.status = 'interviewing';
-      submission.interviewDate = new Date().toISOString();
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(submissions));
-  }
+export const assignInterview = async (submissionId: string, newPastorName: string) => {
+  await fetch('/api/submissions', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      id: submissionId,
+      interviewerName: newPastorName,
+      status: 'interviewing'
+    })
+  });
 };

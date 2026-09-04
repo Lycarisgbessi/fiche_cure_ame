@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { formSchema } from '../schema';
-import { saveSubmission } from '../store';
+import { addSubmission } from '../store';
 import { Submission } from '../types';
 import { ChevronLeft, ChevronRight, Send, CheckCircle2 } from 'lucide-react';
 import { QuestionRenderer } from './QuestionRenderer';
@@ -34,12 +34,12 @@ export function FideleView({ onBack }: { onBack: () => void }) {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const nom = answers['nom'] || '';
     const prenom = answers['prenom'] || '';
     const faithfulName = `${nom} ${prenom}`.trim() || 'Fidèle Anonyme';
 
-    const submission: Submission = {
+    const submission = {
       id: Date.now().toString(),
       date: new Date().toISOString(),
       faithfulName,
@@ -48,7 +48,7 @@ export function FideleView({ onBack }: { onBack: () => void }) {
       status: 'new',
     };
 
-    saveSubmission(submission);
+    await addSubmission(submission);
     setIsSubmitted(true);
   };
 

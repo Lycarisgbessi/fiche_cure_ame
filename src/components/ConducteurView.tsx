@@ -229,9 +229,13 @@ export function ConducteurView({ onBack }: { onBack: () => void }) {
   const [viewMode, setViewMode] = useState<'dashboard' | 'detail' | 'entretien'>('dashboard');
   const [activeTab, setActiveTab] = useState<'new' | 'interviewing' | 'completed'>('new');
 
+  const loadData = async () => {
+    const data = await getSubmissions();
+    setSubmissions(data);
+  };
   useEffect(() => {
     if (isAuthenticated) {
-      setSubmissions(getSubmissions());
+      loadData();
     }
   }, [isAuthenticated, viewMode]);
 
@@ -243,7 +247,7 @@ export function ConducteurView({ onBack }: { onBack: () => void }) {
     return (
       <SubmissionDetail 
         submission={selectedSubmission} 
-        onBack={() => { setViewMode('dashboard'); setSelectedSubmission(null); setSubmissions(getSubmissions()); }} 
+        onBack={() => { setViewMode('dashboard'); setSelectedSubmission(null); loadData(); }} 
         onStartInterview={() => {
           if (selectedSubmission.status === 'new' || !selectedSubmission.status) {
             startInterview(selectedSubmission.id, pastorName);
@@ -259,7 +263,7 @@ export function ConducteurView({ onBack }: { onBack: () => void }) {
           if (selectedSubmission.status === 'new' || !selectedSubmission.status) {
             selectedSubmission.status = 'interviewing';
           }
-          setSubmissions([...getSubmissions()]);
+          loadData();
         }}
       />
     );
@@ -269,7 +273,7 @@ export function ConducteurView({ onBack }: { onBack: () => void }) {
     return (
       <EntretienView 
         submission={selectedSubmission} 
-        onBack={() => { setViewMode('dashboard'); setSelectedSubmission(null); setSubmissions(getSubmissions()); }} 
+        onBack={() => { setViewMode('dashboard'); setSelectedSubmission(null); loadData(); }} 
       />
     );
   }
