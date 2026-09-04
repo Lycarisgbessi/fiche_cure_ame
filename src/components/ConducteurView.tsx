@@ -680,7 +680,7 @@ function LoginScreen({ onLogin, onBack }: { onLogin: (user: any) => void; onBack
   );
 }
 
-function SubmissionDetail({ currentUser, submission, onBack, onStartInterview, onAssign }: { currentUser: any; submission: Submission; onBack: () => void; onStartInterview: () => void; onAssign: (p: string) => void }) {
+function SubmissionDetail({ currentUser, submission, onBack, onDelete, onStartInterview, onAssign }: { currentUser: any; submission: Submission; onBack: () => void; onDelete: () => void; onStartInterview: () => void; onAssign: (p: string) => void }) {
   const [comments, setComments] = useState<Record<string, string>>(submission.comments || {});
   const [showAssignPrompt, setShowAssignPrompt] = useState(false);
   const [newPastorName, setNewPastorName] = useState('');

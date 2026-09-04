@@ -83,3 +83,10 @@ export const updateUserProfile = async (data: any) => {
   });
   return r.json();
 };
+
+export const deleteSubmission = async (id: string) => {
+  const res = await fetch(`/api/submissions?id=${id}`, {
+    method: 'DELETE',
+  });
+  return res.json();
+};
