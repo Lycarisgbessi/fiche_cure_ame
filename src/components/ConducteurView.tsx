@@ -798,9 +798,9 @@ function SubmissionDetail({ currentUser, submission, onBack, onDelete, onStartIn
                       await deleteSubmission(submission.id);
                       alert("Suppression terminée avec succès.");
                       onDelete();
-                    } catch (err) {
+                    } catch (err: any) {
                       console.error(err);
-                      alert("Une erreur est survenue lors de la suppression.");
+                      alert("Une erreur est survenue lors de la suppression : " + err.message);
                     }
                   } else if (val) {
                     alert("Le mot 'supprimer' n'a pas été saisi correctement. Annulation.");

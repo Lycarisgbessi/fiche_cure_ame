@@ -88,5 +88,9 @@ export const deleteSubmission = async (id: string) => {
   const res = await fetch(`/api/submissions?id=${id}`, {
     method: 'DELETE',
   });
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`Erreur serveur (\${res.status}): \${txt}`);
+  }
   return res.json();
 };
