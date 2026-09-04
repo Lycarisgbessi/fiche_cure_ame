@@ -770,13 +770,48 @@ function SubmissionDetail({ currentUser, submission, onBack, onDelete, onStartIn
     <div className="min-h-screen bg-[#F5F5F7] pb-24">
       <header className="sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-gray-200/50">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
-          <button 
-            onClick={onBack} 
-            className="text-[#006865] hover:opacity-80 flex items-center font-bold transition-opacity"
-          >
-            <ChevronLeft className="w-5 h-5 mr-1" />
-            <span className="hidden sm:inline">Retour aux fiches</span>
-          </button>
+          <div className="flex items-center space-x-4">
+            <button 
+              onClick={onBack} 
+              className="text-[#006865] hover:opacity-80 flex items-center font-bold transition-opacity"
+            >
+              <ChevronLeft className="w-5 h-5 mr-1" />
+              <span className="hidden sm:inline">Retour aux fiches</span>
+            </button>
+
+            {currentUser?.role === 'ADMIN' && (
+              <button 
+                onClick={async () => {
+                  const val = prompt("Êtes-vous sûr de vouloir SUPPRIMER définitivement cette fiche ?\\nCette action est irréversible.\\nTapez 'supprimer' pour confirmer :");
+                  if (val && val.trim().toLowerCase() === 'supprimer') {
+                    alert("Les fichiers Excel et PDF vont être téléchargés avant la suppression. Veuillez patienter.");
+                    try {
+                      // 1. Download Excel
+                      await exportToExcel([submission], true);
+                      // 2. Download PDF
+                      exportToPDF([submission], true);
+                      
+                      // 3. Wait a little bit for the browser to trigger downloads
+                      await new Promise(r => setTimeout(r, 2000));
+                      
+                      // 4. Delete
+                      await deleteSubmission(submission.id);
+                      alert("Suppression terminée avec succès.");
+                      onDelete();
+                    } catch (err) {
+                      console.error(err);
+                      alert("Une erreur est survenue lors de la suppression.");
+                    }
+                  } else if (val) {
+                    alert("Le mot 'supprimer' n'a pas été saisi correctement. Annulation.");
+                  }
+                }}
+                className="text-red-500 hover:text-red-700 flex items-center font-bold transition-opacity text-sm ml-4"
+              >
+                <span className="hidden sm:inline bg-red-50 px-3 py-1.5 rounded-lg border border-red-100">Supprimer</span>
+              </button>
+            )}
+          </div>
           <div className="text-center flex-1">
             <h1 className="text-[17px] font-extrabold tracking-tight text-[#006865]">{submission.faithfulName}</h1>
             <p className="text-[11px] font-bold text-[#006865]/60 uppercase tracking-wider mt-0.5">
