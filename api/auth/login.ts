@@ -10,7 +10,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const user = await prisma.user.findFirst({
-      where: { name }
+      where: {
+        OR: [
+          { name },
+          { email: name }
+        ]
+      }
     });
 
     if (!user) {

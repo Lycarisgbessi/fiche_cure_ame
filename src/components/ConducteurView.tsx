@@ -551,7 +551,7 @@ function LoginScreen({ onLogin, onBack }: { onLogin: (user: any) => void; onBack
                   setLoginName(e.target.value);
                   setError('');
                 }}
-                placeholder="Votre nom (ex: Pasteur Jean)"
+                placeholder="Email ou Nom (ex: admin@vases.org)"
                 className={`w-full px-5 py-4 bg-gray-50 border ${error && !loginName ? 'border-red-300 focus:ring-red-200' : 'border-gray-200 focus:border-[#006865] focus:ring-[#006865]/20'} rounded-2xl text-[16px] transition-all outline-none focus:ring-[3px] focus:bg-white`}
                 autoFocus
               />
