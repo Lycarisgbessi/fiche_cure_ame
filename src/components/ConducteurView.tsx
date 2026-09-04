@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getSubmissions, updateComment, startInterview, assignInterview } from '../store';
+import { getSubmissions, updateComment, startInterview, assignInterview, deleteSubmission } from '../store';
 import { Submission } from '../types';
 import { formSchema } from '../schema';
 import { format } from 'date-fns';
