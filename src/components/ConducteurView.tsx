@@ -222,6 +222,65 @@ const exportToPDF = (data: Submission[], isSingle: boolean = false) => {
 };
 
 
+
+function ProfileSettings({ currentUser, setCurrentUser }: any) {
+  const [smtpHost, setSmtpHost] = useState(currentUser?.smtpHost || '');
+  const [smtpPort, setSmtpPort] = useState(currentUser?.smtpPort || 465);
+  const [smtpUser, setSmtpUser] = useState(currentUser?.smtpUser || '');
+  const [smtpPass, setSmtpPass] = useState(currentUser?.smtpPass || '');
+  const [msg, setMsg] = useState('');
+
+  const handleSave = async (e: any) => {
+    e.preventDefault();
+    setMsg('Sauvegarde...');
+    try {
+      const res = await fetch('/api/users', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: currentUser.id, smtpHost, smtpPort, smtpUser, smtpPass })
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setCurrentUser(updated);
+        setMsg('Paramètres SMTP enregistrés avec succès !');
+      } else {
+        setMsg('Erreur lors de la sauvegarde.');
+      }
+    } catch(err) {
+      setMsg('Erreur réseau.');
+    }
+  };
+
+  return (
+    <div className="p-6 max-w-xl mx-auto">
+      <h2 className="text-2xl font-bold text-[#006865] mb-2">Mon Profil SMTP</h2>
+      <p className="text-sm text-gray-500 mb-6">Configurez vos accès SMTP pour envoyer les PDF et Excel par email directement depuis la plateforme.</p>
+      
+      <form onSubmit={handleSave} className="space-y-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-1">Serveur SMTP</label>
+          <input className="w-full p-3 border rounded-xl" placeholder="ex: smtp.gmail.com" value={smtpHost} onChange={e=>setSmtpHost(e.target.value)} required />
+        </div>
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-1">Port</label>
+          <input className="w-full p-3 border rounded-xl" type="number" placeholder="465" value={smtpPort} onChange={e=>setSmtpPort(parseInt(e.target.value))} required />
+        </div>
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-1">Utilisateur (Email)</label>
+          <input className="w-full p-3 border rounded-xl" placeholder="votre email" value={smtpUser} onChange={e=>setSmtpUser(e.target.value)} required />
+        </div>
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-1">Mot de passe (ou mot de passe d'application)</label>
+          <input className="w-full p-3 border rounded-xl" type="password" placeholder="***" value={smtpPass} onChange={e=>setSmtpPass(e.target.value)} required />
+        </div>
+        
+        <button className="w-full bg-[#006865] text-white p-3 rounded-xl font-bold mt-4" type="submit">Sauvegarder</button>
+        {msg && <p className="text-sm mt-3 text-center text-[#D4AF37] font-bold">{msg}</p>}
+      </form>
+    </div>
+  );
+}
+
 function TeamManagement() {
   const [users, setUsers] = useState<any[]>([]);
   const [name, setName] = useState('');
@@ -297,7 +356,7 @@ export function ConducteurView({ onBack }: { onBack: () => void }) {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [viewMode, setViewMode] = useState<'dashboard' | 'detail' | 'entretien'>('dashboard');
-  const [activeTab, setActiveTab] = useState<'new' | 'interviewing' | 'completed' | 'team'>('new');
+  const [activeTab, setActiveTab] = useState<'new' | 'interviewing' | 'completed' | 'team' | 'profile'>('new');
   
   // Set default tab for PASTOR
   useEffect(() => {
@@ -416,6 +475,12 @@ export function ConducteurView({ onBack }: { onBack: () => void }) {
                   Équipe
                 </button>
               )}
+              <button 
+                onClick={() => setActiveTab('profile')}
+                className={`px-4 py-2 rounded-lg font-bold text-[13px] transition-all ${activeTab === 'profile' ? 'bg-white shadow-sm text-[#006865]' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                Mon Profil SMTP
+              </button>
             </div>
             
             <div className="flex gap-2">
@@ -439,7 +504,9 @@ export function ConducteurView({ onBack }: { onBack: () => void }) {
           </div>
 
           
-          {activeTab === 'team' ? (
+          {activeTab === 'profile' ? (
+            <ProfileSettings currentUser={currentUser} setCurrentUser={setCurrentUser} />
+          ) : activeTab === 'team' ? (
             <TeamManagement />
           ) : filteredSubmissions.length === 0 ? (
             <div className="p-16 text-center text-gray-500">
@@ -623,10 +690,43 @@ function SubmissionDetail({ currentUser, submission, onBack, onStartInterview, o
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
 
-  const handleShareEmail = () => {
-    const subject = `Fiche de cure d'âme: ${submission.faithfulName}`;
-    const body = `Bonjour,\n\nUne fiche de cure d'âme a été soumise par ${submission.faithfulName} le ${format(new Date(submission.date), 'dd/MM/yyyy HH:mm')}.\n\nStatut: ${submission.status || 'Nouveau'}\n\nPour des raisons de confidentialité, veuillez vous connecter à la plateforme pour générer et joindre le PDF complet.`;
-    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  const handleShareEmail = async () => {
+    const recipient = prompt("Entrez l'adresse email du destinataire :");
+    if (!recipient) return;
+
+    alert("Génération du PDF et envoi en cours, veuillez patienter...");
+    
+    const input = document.getElementById('pdf-content');
+    if (!input) return;
+    try {
+      const canvas = await html2canvas(input, { scale: 2 });
+      const imgData = canvas.toDataURL('image/png');
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = doc.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      
+      const pdfBase64 = doc.output('datauristring').split(',')[1];
+
+      const res = await fetch('/api/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          recipientEmail: recipient,
+          subject: `Fiche de cure d'âme: ${submission.faithfulName}`,
+          text: `Veuillez trouver ci-joint la fiche de cure d'âme de ${submission.faithfulName}.`,
+          filename: `Fiche_${submission.faithfulName}.pdf`,
+          fileBase64: pdfBase64,
+          contentType: 'application/pdf'
+        })
+      });
+      const data = await res.json();
+      if (res.ok) alert("Email envoyé avec succès !");
+      else alert(data.message);
+    } catch(err) {
+      alert("Erreur réseau ou lors de l'envoi.");
+    }
   };
 
   const handleSaveComment = (questionId: string, text: string) => {

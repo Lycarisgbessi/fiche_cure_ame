@@ -16,9 +16,7 @@ export const addSubmission = async (submission: Submission) => {
   return res.json();
 };
 
-export const updateComment = async (submissionId: string, questionId: string, text: string) => {
-  
-};
+export const updateComment = async (submissionId: string, questionId: string, text: string) => {};
 
 export const startInterview = async (submissionId: string, pastorName: string) => {
   await fetch('/api/submissions', {
@@ -75,4 +73,13 @@ export const updateGlobalObservations = async (id: string, obs: string) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id, globalObservations: obs })
   });
+};
+
+export const updateUserProfile = async (data: any) => {
+  const r = await fetch('/api/users', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  return r.json();
 };

@@ -9,12 +9,18 @@ datasource db {
 
 model User {
   id        String   @id @default(uuid())
-  email     String   @unique
+  email     String?  @unique
   password  String
   name      String
   role      Role     @default(PASTOR)
   createdAt DateTime @default(now())
 
+  // SMTP Settings
+  smtpHost  String?
+  smtpPort  Int?
+  smtpUser  String?
+  smtpPass  String?
+  
   submissions Submission[]
 }
 

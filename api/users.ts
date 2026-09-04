@@ -37,5 +37,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
+  if (req.method === 'PUT') {
+    const { id, smtpHost, smtpPort, smtpUser, smtpPass } = req.body;
+    try {
+      const user = await prisma.user.update({
+        where: { id },
+        data: {
+          smtpHost,
+          smtpPort: smtpPort ? parseInt(smtpPort) : null,
+          smtpUser,
+          smtpPass
+        }
+      });
+      return res.status(200).json(user);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: 'Error updating user' });
+    }
+  }
+
   return res.status(405).json({ message: 'Method not allowed' });
 }
