@@ -3,8 +3,15 @@ import prisma from './_lib/prisma';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
+    const { role, userId } = req.query;
     try {
+      let whereClause = {};
+      if (role === 'PASTOR' && userId) {
+        whereClause = { interviewerId: String(userId) };
+      }
+
       const submissions = await prisma.submission.findMany({
+        where: whereClause,
         include: { interviewer: true },
         orderBy: { date: 'desc' }
       });

@@ -1,7 +1,8 @@
 import { Submission } from './types';
 
-export const getSubmissions = async (): Promise<Submission[]> => {
-  const res = await fetch('/api/submissions');
+export const getSubmissions = async (user?: any): Promise<Submission[]> => {
+  const params = user ? `?role=${user.role}&userId=${user.id}` : '';
+  const res = await fetch(`/api/submissions${params}`);
   if (!res.ok) return [];
   return res.json();
 };

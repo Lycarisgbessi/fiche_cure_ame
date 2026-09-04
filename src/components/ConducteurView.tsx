@@ -298,9 +298,16 @@ export function ConducteurView({ onBack }: { onBack: () => void }) {
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [viewMode, setViewMode] = useState<'dashboard' | 'detail' | 'entretien'>('dashboard');
   const [activeTab, setActiveTab] = useState<'new' | 'interviewing' | 'completed' | 'team'>('new');
+  
+  // Set default tab for PASTOR
+  useEffect(() => {
+    if (currentUser?.role === 'PASTOR' && activeTab === 'new') {
+      setActiveTab('interviewing');
+    }
+  }, [currentUser]);
 
   const loadData = async () => {
-    const data = await getSubmissions();
+    const data = await getSubmissions(currentUser);
     setSubmissions(data);
   };
   useEffect(() => {
@@ -316,6 +323,7 @@ export function ConducteurView({ onBack }: { onBack: () => void }) {
   if (viewMode === 'detail' && selectedSubmission) {
     return (
       <SubmissionDetail 
+        currentUser={currentUser} 
         submission={selectedSubmission} 
         onBack={() => { setViewMode('dashboard'); setSelectedSubmission(null); loadData(); }} 
         onStartInterview={() => {
@@ -382,12 +390,12 @@ export function ConducteurView({ onBack }: { onBack: () => void }) {
         >
           <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center bg-gray-50/50 gap-4">
             <div className="flex bg-gray-200/50 p-1 rounded-xl">
-              <button 
+              {currentUser?.role === 'ADMIN' && (<button 
                 onClick={() => setActiveTab('new')}
                 className={`px-4 py-2 rounded-lg font-bold text-[13px] transition-all ${activeTab === 'new' ? 'bg-white shadow-sm text-[#006865]' : 'text-gray-500 hover:text-gray-700'}`}
               >
                 Nouvelles ({submissions.filter(s => (s.status || 'new') === 'new').length})
-              </button>
+              </button>)}
               <button 
                 onClick={() => setActiveTab('interviewing')}
                 className={`px-4 py-2 rounded-lg font-bold text-[13px] transition-all ${activeTab === 'interviewing' ? 'bg-white shadow-sm text-[#006865]' : 'text-gray-500 hover:text-gray-700'}`}
@@ -605,7 +613,7 @@ function LoginScreen({ onLogin, onBack }: { onLogin: (user: any) => void; onBack
   );
 }
 
-function SubmissionDetail({ submission, onBack, onStartInterview, onAssign }: { submission: Submission; onBack: () => void; onStartInterview: () => void; onAssign: (p: string) => void }) {
+function SubmissionDetail({ currentUser, submission, onBack, onStartInterview, onAssign }: { currentUser: any; submission: Submission; onBack: () => void; onStartInterview: () => void; onAssign: (p: string) => void }) {
   const [comments, setComments] = useState<Record<string, string>>(submission.comments || {});
   const [showAssignPrompt, setShowAssignPrompt] = useState(false);
   const [newPastorName, setNewPastorName] = useState('');
@@ -679,14 +687,14 @@ function SubmissionDetail({ submission, onBack, onStartInterview, onAssign }: { 
           <div className="flex gap-2 items-center">
             {(submission.status === 'new' || submission.status === 'interviewing' || !submission.status) && (
               <>
-                <button
+                {currentUser?.role === 'ADMIN' && (<button
                   onClick={() => setShowAssignPrompt(true)}
                   className="flex items-center space-x-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-xl font-bold text-xs hover:bg-gray-200 transition-all border border-gray-200 mr-2"
                   title="Assigner / Transférer"
                 >
                   <Users className="w-4 h-4" />
                   <span className="hidden sm:inline">Transférer</span>
-                </button>
+                </button>)}
                 <button
                   onClick={onStartInterview}
                   className="flex items-center space-x-1.5 px-4 py-2 bg-[#D4AF37] text-white rounded-xl font-bold text-xs hover:bg-[#b5952f] transition-all shadow-md shadow-[#D4AF37]/20 mr-2"
@@ -744,15 +752,8 @@ function SubmissionDetail({ submission, onBack, onStartInterview, onAssign }: { 
               className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm"
             >
               <h3 className="text-lg font-bold text-[#006865] mb-2">Transférer à un pasteur</h3>
-              <p className="text-sm text-gray-500 mb-4">Entrez le nom du pasteur qui prendra en charge cet entretien.</p>
-              <input
-                type="text"
-                autoFocus
-                placeholder="Nom du pasteur"
-                value={newPastorName}
-                onChange={(e) => setNewPastorName(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-[#006865] outline-none transition-colors mb-4"
-              />
+              <p className="text-sm text-gray-500 mb-4">Sélectionnez le pasteur qui prendra en charge cet entretien.</p>
+              <AssignSelect newPastorName={newPastorName} setNewPastorName={setNewPastorName} />
               <div className="flex justify-end gap-2">
                 <button 
                   onClick={() => setShowAssignPrompt(false)}
@@ -899,5 +900,24 @@ function ChevronRight(props: any) {
       >
       <path d="m9 18 6-6-6-6" />
     </svg>
+  );
+}
+
+function AssignSelect({ newPastorName, setNewPastorName }: any) {
+  const [users, setUsers] = useState<any[]>([]);
+  useEffect(() => {
+    fetch('/api/users').then(r => r.json()).then(setUsers);
+  }, []);
+  return (
+    <select
+      value={newPastorName}
+      onChange={(e) => setNewPastorName(e.target.value)}
+      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:border-[#006865] outline-none transition-colors mb-4"
+    >
+      <option value="">-- Choisir un pasteur --</option>
+      {users.filter(u => u.role === 'PASTOR' || u.role === 'ADMIN').map(u => (
+        <option key={u.id} value={u.name}>{u.name}</option>
+      ))}
+    </select>
   );
 }
