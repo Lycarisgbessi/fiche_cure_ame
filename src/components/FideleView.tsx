@@ -45,7 +45,7 @@ export function FideleView({ onBack }: { onBack: () => void }) {
       faithfulName,
       answers,
       comments: {},
-      status: 'new',
+      status: 'new' as const,
     };
 
     await addSubmission(submission);

@@ -221,13 +221,83 @@ const exportToPDF = (data: Submission[], isSingle: boolean = false) => {
   doc.save(filename);
 };
 
+
+function TeamManagement() {
+  const [users, setUsers] = useState<any[]>([]);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [role, setRole] = useState('PASTOR');
+  const [msg, setMsg] = useState('');
+
+  const loadUsers = async () => {
+    const res = await fetch('/api/users');
+    if (res.ok) setUsers(await res.json());
+  };
+
+  useEffect(() => { loadUsers(); }, []);
+
+  const handleCreate = async (e: any) => {
+    e.preventDefault();
+    const res = await fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password, role })
+    });
+    if (res.ok) {
+      setMsg('Compte créé avec succès !');
+      setName(''); setEmail(''); setPassword('');
+      loadUsers();
+    } else {
+      const data = await res.json();
+      setMsg(data.message || 'Erreur lors de la création');
+    }
+  };
+
+  return (
+    <div className="p-6">
+      <h2 className="text-2xl font-bold text-[#006865] mb-6">Gestion de l'équipe</h2>
+      <div className="grid md:grid-cols-2 gap-8">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <h3 className="font-bold text-lg mb-4">Créer un compte</h3>
+          <form onSubmit={handleCreate} className="space-y-4">
+            <input className="w-full p-3 border rounded-xl" placeholder="Nom complet" value={name} onChange={e=>setName(e.target.value)} required />
+            <input className="w-full p-3 border rounded-xl" placeholder="Email (optionnel)" value={email} onChange={e=>setEmail(e.target.value)} />
+            <input className="w-full p-3 border rounded-xl" type="password" placeholder="Mot de passe" value={password} onChange={e=>setPassword(e.target.value)} required />
+            <select className="w-full p-3 border rounded-xl" value={role} onChange={e=>setRole(e.target.value)}>
+              <option value="PASTOR">Pasteur</option>
+              <option value="ADMIN">Administrateur</option>
+            </select>
+            <button className="w-full bg-[#006865] text-white p-3 rounded-xl font-bold" type="submit">Créer le compte</button>
+            {msg && <p className="text-sm mt-2 text-center text-[#D4AF37] font-bold">{msg}</p>}
+          </form>
+        </div>
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <h3 className="font-bold text-lg mb-4">Comptes existants</h3>
+          <ul className="space-y-3">
+            {users.map(u => (
+              <li key={u.id} className="flex justify-between p-3 bg-gray-50 rounded-xl">
+                <div>
+                  <p className="font-bold">{u.name}</p>
+                  <p className="text-xs text-gray-500">{u.email}</p>
+                </div>
+                <span className="text-xs font-bold px-2 py-1 bg-[#D4AF37]/20 text-[#D4AF37] rounded-md h-fit">{u.role}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ConducteurView({ onBack }: { onBack: () => void }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [pastorName, setPastorName] = useState('');
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [viewMode, setViewMode] = useState<'dashboard' | 'detail' | 'entretien'>('dashboard');
-  const [activeTab, setActiveTab] = useState<'new' | 'interviewing' | 'completed'>('new');
+  const [activeTab, setActiveTab] = useState<'new' | 'interviewing' | 'completed' | 'team'>('new');
 
   const loadData = async () => {
     const data = await getSubmissions();
@@ -240,7 +310,7 @@ export function ConducteurView({ onBack }: { onBack: () => void }) {
   }, [isAuthenticated, viewMode]);
 
   if (!isAuthenticated) {
-    return <LoginScreen onLogin={(name) => { setPastorName(name); setIsAuthenticated(true); }} onBack={onBack} />;
+    return <LoginScreen onLogin={(name) => { setCurrentUser(name); setIsAuthenticated(true); }} onBack={onBack} />;
   }
 
   if (viewMode === 'detail' && selectedSubmission) {
@@ -250,9 +320,9 @@ export function ConducteurView({ onBack }: { onBack: () => void }) {
         onBack={() => { setViewMode('dashboard'); setSelectedSubmission(null); loadData(); }} 
         onStartInterview={() => {
           if (selectedSubmission.status === 'new' || !selectedSubmission.status) {
-            startInterview(selectedSubmission.id, pastorName);
+            startInterview(selectedSubmission.id, currentUser?.name);
             selectedSubmission.status = 'interviewing';
-            selectedSubmission.interviewerName = pastorName;
+            selectedSubmission.interviewerName = currentUser?.name;
             selectedSubmission.interviewDate = new Date().toISOString();
           }
           setViewMode('entretien');
@@ -296,7 +366,7 @@ export function ConducteurView({ onBack }: { onBack: () => void }) {
               Espace Conducteur
             </h1>
             <p className="text-[11px] font-bold text-[#006865]/60 uppercase tracking-wider mt-0.5">
-              Connecté : {pastorName}
+              Connecté : {currentUser?.name}
             </p>
           </div>
           <div className="w-16" /> {/* Spacer */}
@@ -330,6 +400,14 @@ export function ConducteurView({ onBack }: { onBack: () => void }) {
               >
                 Terminés ({submissions.filter(s => s.status === 'completed').length})
               </button>
+              {currentUser?.role === 'ADMIN' && (
+                <button 
+                  onClick={() => setActiveTab('team')}
+                  className={`px-4 py-2 rounded-lg font-bold text-[13px] transition-all ${activeTab === 'team' ? 'bg-white shadow-sm text-[#006865]' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                  Équipe
+                </button>
+              )}
             </div>
             
             <div className="flex gap-2">
@@ -352,7 +430,10 @@ export function ConducteurView({ onBack }: { onBack: () => void }) {
             </div>
           </div>
 
-          {filteredSubmissions.length === 0 ? (
+          
+          {activeTab === 'team' ? (
+            <TeamManagement />
+          ) : filteredSubmissions.length === 0 ? (
             <div className="p-16 text-center text-gray-500">
               <MessageSquare className="w-12 h-12 mx-auto mb-4 text-gray-300" />
               <p className="text-[15px]">Aucune fiche dans cette catégorie.</p>
@@ -392,32 +473,43 @@ export function ConducteurView({ onBack }: { onBack: () => void }) {
               </AnimatePresence>
             </ul>
           )}
+
         </motion.div>
       </main>
     </div>
   );
 }
 
-function LoginScreen({ onLogin, onBack }: { onLogin: (name: string) => void; onBack: () => void }) {
+function LoginScreen({ onLogin, onBack }: { onLogin: (user: any) => void; onBack: () => void }) {
   const [password, setPassword] = useState('');
-  const [pastorName, setPastorName] = useState('');
+  const [loginName, setLoginName] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Mot de passe temporaire codé en dur
-  const ADMIN_PASSWORD = 'vases';
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pastorName.trim()) {
+    if (!loginName.trim()) {
       setError('Veuillez entrer votre nom.');
       return;
     }
-    if (password === ADMIN_PASSWORD) {
-      onLogin(pastorName.trim());
-    } else {
-      setError('Mot de passe incorrect. Accès refusé.');
-      setPassword('');
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: loginName.trim(), password })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        onLogin(data.user);
+      } else {
+        setError(data.message || 'Mot de passe incorrect.');
+      }
+    } catch (err) {
+      setError('Erreur réseau.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -454,13 +546,13 @@ function LoginScreen({ onLogin, onBack }: { onLogin: (name: string) => void; onB
             <div>
               <input
                 type="text"
-                value={pastorName}
+                value={loginName}
                 onChange={(e) => {
-                  setPastorName(e.target.value);
+                  setLoginName(e.target.value);
                   setError('');
                 }}
                 placeholder="Votre nom (ex: Pasteur Jean)"
-                className={`w-full px-5 py-4 bg-gray-50 border ${error && !pastorName ? 'border-red-300 focus:ring-red-200' : 'border-gray-200 focus:border-[#006865] focus:ring-[#006865]/20'} rounded-2xl text-[16px] transition-all outline-none focus:ring-[3px] focus:bg-white`}
+                className={`w-full px-5 py-4 bg-gray-50 border ${error && !loginName ? 'border-red-300 focus:ring-red-200' : 'border-gray-200 focus:border-[#006865] focus:ring-[#006865]/20'} rounded-2xl text-[16px] transition-all outline-none focus:ring-[3px] focus:bg-white`}
                 autoFocus
               />
             </div>
@@ -500,7 +592,7 @@ function LoginScreen({ onLogin, onBack }: { onLogin: (name: string) => void; onB
 
             <button
               type="submit"
-              disabled={!password || !pastorName}
+              disabled={!password || !loginName}
               className="w-full flex items-center justify-center p-4 bg-[#D4AF37] text-white rounded-2xl font-bold text-[16px] hover:bg-[#b5952f] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#D4AF37]/20 mt-2"
             >
               <Unlock className="w-5 h-5 mr-2" />

@@ -16,9 +16,7 @@ export const addSubmission = async (submission: Submission) => {
 };
 
 export const updateComment = async (submissionId: string, questionId: string, text: string) => {
-  // To avoid overriding all comments, we might need to fetch first, but let's assume we send the delta
-  // or we can fetch current, merge, and send.
-  // Actually the API accepts a `comments` object. We can just send the updated `comments` object from the component.
+  
 };
 
 export const startInterview = async (submissionId: string, pastorName: string) => {
@@ -53,5 +51,27 @@ export const assignInterview = async (submissionId: string, newPastorName: strin
       interviewerName: newPastorName,
       status: 'interviewing'
     })
+  });
+};
+
+export const getUsers = async () => {
+  const r = await fetch('/api/users');
+  return r.json();
+};
+
+export const createUser = async (data: any) => {
+  const r = await fetch('/api/users', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  return r;
+};
+
+export const updateGlobalObservations = async (id: string, obs: string) => {
+  await fetch('/api/submissions', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, globalObservations: obs })
   });
 };
