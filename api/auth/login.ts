@@ -1,20 +1,27 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import prisma from '../_lib/prisma';
+import { PrismaClient } from '@prisma/client';
+
+const DB_URL =
+  process.env.DATABASE_URL ||
+  'postgresql://neondb_owner:npg_TBohfK4nPcq6@ep-autumn-moon-aybk33iq-pooler.c-5.us-east-2.aws.neon.tech/neondb?sslmode=require';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
-  const { name, password } = req.body;
+  const prisma = new PrismaClient({ datasourceUrl: DB_URL });
 
   try {
+    const { name, password } = req.body || {};
+
+    if (!name) {
+      return res.status(400).json({ message: 'Identifiant requis' });
+    }
+
     const user = await prisma.user.findFirst({
       where: {
-        OR: [
-          { name },
-          { email: name }
-        ]
+        OR: [{ name }, { email: name }]
       }
     });
 
@@ -26,10 +33,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(401).json({ message: 'Mot de passe incorrect' });
     }
 
-    // Pas de JWT complexe pour le prototype V1, on renvoie juste les infos de l'utilisateur.
     return res.status(200).json({ user });
   } catch (error: any) {
     console.error(error);
-    return res.status(500).json({ message: 'Internal server error', detail: error?.message, stack: error?.stack?.substring(0, 500) });
+    return res.status(500).json({ message: 'Internal server error', detail: error?.message });
+  } finally {
+    await prisma.$disconnect();
   }
 }

@@ -1,5 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import prisma from './_lib/prisma';
+import { PrismaClient } from '@prisma/client';
+const DB_URL = process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_TBohfK4nPcq6@ep-autumn-moon-aybk33iq-pooler.c-5.us-east-2.aws.neon.tech/neondb?sslmode=require';
+const prisma = new PrismaClient({ datasourceUrl: DB_URL });
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
