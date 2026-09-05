@@ -1,11 +1,10 @@
 {
+  "buildCommand": "prisma generate && npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
   "rewrites": [
     {
-      "source": "/fidele(.*)",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/admin(.*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
