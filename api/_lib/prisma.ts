@@ -9,6 +9,11 @@ declare global {
 const prisma =
   global.prisma ||
   new PrismaClient({
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL || "postgresql://neondb_owner:npg_TBohfK4nPcq6@ep-autumn-moon-aybk33iq-pooler.c-5.us-east-2.aws.neon.tech/neondb?sslmode=require"
+      }
+    },
     log: ['query'],
   });
 
