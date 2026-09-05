@@ -28,8 +28,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Pas de JWT complexe pour le prototype V1, on renvoie juste les infos de l'utilisateur.
     return res.status(200).json({ user });
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    return res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error', detail: error?.message, stack: error?.stack?.substring(0, 500) });
   }
 }
